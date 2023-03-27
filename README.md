@@ -1,6 +1,6 @@
 # Zulip ChatGPT bot
 
-Mostly ChatGPT generated experimental bot.
+Mostly ChatGPT generated experimental bot. [You can read a related blog article.](https://blog.parallelo3301.org/blog/creating-a-zulip-bot-with-chatgpt/)
 
 ## How to use the bot
 
