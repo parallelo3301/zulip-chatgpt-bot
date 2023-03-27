@@ -66,7 +66,6 @@ Message: @GPT new What is my name?
 ```
 
 
-
 ## Running the bot
 
 Steps to do:
