@@ -73,6 +73,7 @@ Steps to do:
 1. Add Zulip Generic bot called `GPT`, and download/update the `.zuliprc`
 2. [Obtain OpenAI API key](https://platform.openai.com/account/api-keys)
 3. Install `python3`, `pip` and `git`
+4. (optional) Create virtual env
 
 <br>
 
@@ -85,6 +86,9 @@ nano .env # fill OPENAI_API_KEY
 
 cp .zuliprc-example .zuliprc
 nano .zuliprc # replace with your config
+
+python3 -m venv env # optional
+source env/bin/activate # optional
 
 pip install -r requirements.txt
 python3 bot.py
