@@ -8,7 +8,7 @@ As it's a Chat bot style, it works in a conversation. This context may affect fu
 
 ### New conversation 
 
-To start a new conversation (as it fetches the history for up to 3K tokens) just write keyword `new` in the beginning of the message. Only the first occurence should happen, so you should be able to use the word new in the prompt beginning, but only for a new conversation, sorry for that.
+To start a new conversation (as it fetches the history for up to 6K tokens, depends on the model and settings) just write `!new` subcommand anywhere in the message.
 
 #### Examples
 
@@ -38,9 +38,7 @@ Message: new What is my name?
 
 ### Public + private streams
 
-You will need to active the bot by:
-1. using a bot mention (`@GPT`)
-2. writing `/gpt`
+You will need to active the bot by mentioning him, like `@GPT`
 
 Those activations are then being replaced in the prompt.
 
@@ -54,15 +52,16 @@ For private streams
 #### Examples
 
 ```
-# Conversation; all possible messages until the token `new` are sent in the conversation
-Message: @GPT new My name is XY.
+# Conversation; e.g. with previous messages
+Message: @GPT !new My name is XY.
 GPT: ...
 Message: @GPT What is my name?
 
-# Single prompt; only the current prompt is being sent
-Message: /gpt new My name is XY.
+# Single prompt; only the current prompt is being sent without previous context
+Message: My name is XY. @GPT
 GPT: ...
-Message: @GPT new What is my name?
+# as the !new subcommand is used, GPT will not know your name
+Message: @GPT !new What is my name?
 ```
 
 
