@@ -5,12 +5,15 @@ import openai
 import zulip
 from dotenv import load_dotenv
 import tiktoken
+import sqlite3
 
 # Load the .env file
 load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
+
+conn = sqlite3.connect('data.db')
 
 # Set up GPT-3 API key
 openai.api_key = os.environ['OPENAI_API_KEY']
@@ -98,8 +101,8 @@ You can use the following subcommands to control the bot:
 - `!cicada` - (not implemented yet) add system context for Cicada; this may provide more accurate responses
 
 ### Model:
-- `!gpt3` - use GPT-3.5 Turbo (default)
-- `!gpt4` - use GPT-4
+- `!gpt3` - use GPT-3.5 Turbo (default; 4K tokens, up to 2.5K for input)
+- `!gpt4` - use GPT-4 (8K tokens, up to 6K for input)
 
 ### Global settings (not implemented yet):
 - `!set` - show current settings
@@ -219,7 +222,7 @@ def handle_message(event):
         'gpt-3.5-turbo': 2500,
         'gpt-3.5-turbo-0301': 2500,
         # input limit for GPT-4 (context 8k, prompt 6k, response 2k)
-        'gpt4': 6000,
+        'gpt-4': 6000,
     }
 
     model = DEFAULT_MODEL_NAME or 'gpt-3.5-turbo'
@@ -230,7 +233,7 @@ def handle_message(event):
     if "gpt3" in subcommands:
         model = 'gpt-3.5-turbo'
     elif "gpt4" in subcommands:
-        model = 'gpt4'
+        model = 'gpt-4'
 
     token_limit = model_tokens[model]
 

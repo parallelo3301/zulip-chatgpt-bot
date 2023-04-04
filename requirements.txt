@@ -2,3 +2,4 @@ zulip==0.8.2
 openai==0.27.2
 python-dotenv==1.0.0
 tiktoken==0.3.3
+sqlite3==3.11.2
