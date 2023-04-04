@@ -6,6 +6,7 @@ import zulip
 from dotenv import load_dotenv
 import tiktoken
 import sqlite3
+import datetime
 
 # Load the .env file
 load_dotenv()
@@ -359,6 +360,14 @@ def handle_message(event):
     if not subcommands or "new" not in subcommands:
         messages = with_previous_messages(
             client, msg, messages, subcommands, token_limit, append_after_index)
+
+
+    # Get current datetime object
+    now = datetime.datetime.now()
+
+    # Convert datetime object to a string with a specific format
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    print(current_time, "Prompt from", msg['sender_email'], "with subcommands:", subcommands, "is:", content)
 
     response = get_gpt3_response(messages, model=model)
     send_reply(response, msg)
