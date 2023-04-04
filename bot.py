@@ -14,6 +14,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 conn = sqlite3.connect('data.db')
+cur = conn.cursor()
 
 # Set up GPT-3 API key
 openai.api_key = os.environ['OPENAI_API_KEY']
@@ -24,6 +25,8 @@ client = zulip.Client(config_file=".zuliprc")
 DEFAULT_MODEL_NAME = os.environ['DEFAULT_MODEL_NAME']
 BOT_NAME = os.environ['BOT_NAME']
 VERSION = "1.0.0"
+
+contexts = {}
 
 
 def num_tokens_from_messages(messages, model="gpt-3.5-turbo"):
@@ -96,17 +99,19 @@ You can use the following subcommands to control the bot:
 ### Context:
 - `!topic` - use context from the current topic (default behaviour; subcommand not implemented/needed)
 - `!stream` - use context from the current stream
-- `!new` - start a new conversation; no previous context (by default, the bot will use context from the previous conversation which may affect the generated response)
-- `!contexts` - (not implemented yet) list all available contexts (e.g. `!cicada`, `!frankie`)
-- `!cicada` - (not implemented yet) add system context for Cicada; this may provide more accurate responses
+- `!new` - start a new conversation; no previous context (the bot will use context from the previous conversation by default which may affect the generated response)
+- `!contexts` - list all available contexts (e.g. `!cicada`, `!frankie`) and their values
+
+Example custom defined context: `!cicada` - add system context for Cicada; this may provide more accurate responses
 
 ### Model:
 - `!gpt3` - use GPT-3.5 Turbo (default; 4K tokens, up to 2.5K for input)
 - `!gpt4` - use GPT-4 (8K tokens, up to 6K for input)
 
-### Global settings (not implemented yet):
-- `!set` - show current settings
-- `!set subcommand Cicada "Cicada is a Bitcoin and Monero wallet..."` - set your default model to GPT-3.5 Turbo
+### Global settings (admins only):
+- `!set` - (not implemented yet) show current settings
+- `!set context <name> <value> - upsert a context like !cicada. Example: `!set context cicada Cicada is a business wallet`
+- `!unset context <name>` - delete a context
 
 ### User settings (not implemented yet):
 - `!me` - show your current settings
@@ -131,12 +136,14 @@ def get_subcommands(content):
 
 def remove_subcommands(content, subcommands):
     for subcommand in subcommands:
-        content = re.sub(f"!{subcommand} ", "", content, flags=re.IGNORECASE).strip()
-        content = re.sub(f"!{subcommand}", "", content, flags=re.IGNORECASE).strip()
+        content = re.sub(f"!{subcommand} ", "", content,
+                         flags=re.IGNORECASE).strip()
+        content = re.sub(f"!{subcommand}", "", content,
+                         flags=re.IGNORECASE).strip()
     return content
 
 
-def with_previous_messages(client, msg, messages, subcommands, token_limit):
+def with_previous_messages(client, msg, messages, subcommands, token_limit, append_after_index):
     if msg['type'] == 'private':
         query = {
             'anchor': msg['id'],
@@ -176,23 +183,96 @@ def with_previous_messages(client, msg, messages, subcommands, token_limit):
         content = re.sub("@\*\*{bot}\*\*".format(bot=BOT_NAME), "", content)
         content = content.strip()
 
+        # get subcommands (words starting with exclamation mark)
+        subcommands = get_subcommands(content)
+        content = remove_subcommands(content, subcommands)
+
         if client.email == msg['sender_email']:
             role = "assistant"
         else:
             role = "user"
 
-        new_messages.insert(1, {"role": role, "content": content.strip()})
+        new_messages.insert(append_after_index, {
+                            "role": role, "content": content.strip()})
         tokens = num_tokens_from_messages(messages=new_messages)
 
         if tokens > token_limit:
             # remove message from index 1
-            new_messages = new_messages[:1] + new_messages[2:]
+            new_messages = new_messages[:append_after_index] + \
+                new_messages[append_after_index+1:]
             break
 
     return new_messages
 
 
+def is_admin(client, msg):
+    member = client.get_user_by_id(msg['sender_id'])
+    return member.get("user", {}).get("is_admin")
+
+
+def upsert_context(context_name, context_value):
+    context_exists = cur.execute(
+        "SELECT * FROM contexts WHERE name = ?", (context_name,)).fetchone()
+    if context_exists:
+        cur.execute("UPDATE contexts SET value = ? WHERE name = ?",
+                    (context_value, context_name))
+    else:
+        cur.execute("INSERT INTO contexts (name, value) VALUES (?, ?)",
+                    (context_name, context_value))
+    conn.commit()
+    refetch_contexts()
+
+
+def delete_context(context_name):
+    cur.execute("DELETE FROM contexts WHERE name = ?", (context_name,))
+    conn.commit()
+    refetch_contexts()
+
+
+def refetch_contexts():
+    global contexts
+    contexts = cur.execute("SELECT * FROM contexts").fetchall()
+
+
+def process_set_subcommands(client, msg, messages, subcommands, content):
+    content_chunks = content.strip().split()
+    command = content_chunks[0].lower()
+    if command == "context":
+        # return when sender is not an admin
+        if not is_admin(client, msg):
+            send_reply("Sorry, only admins can un/set contexts", msg)
+            return
+
+        context_name = content_chunks[1].lower()
+
+        disabled_contexts = ["topic", "stream", "new", "help",
+                             "contexts", "gpt3", "gpt4", "set", "unset", "me", "admin", "stats"]
+        if context_name in disabled_contexts:
+            send_reply(f"Sorry, you can't set context for {context_name}", msg)
+            return
+
+        context_value = " ".join(content_chunks[2:])
+        upsert_context(context_name, context_value)
+        send_reply(f"I have set !{context_name} to: {context_value}", msg)
+
+
+def process_unset_subcommands(client, msg, messages, subcommands, content):
+    content_chunks = content.strip().split()
+    command = content_chunks[0].lower()
+    if command == "context":
+        # return when sender is not an admin
+        if not is_admin(client, msg):
+            send_reply("Sorry, only admins can un/set contexts", msg)
+            return
+
+        context_name = content_chunks[1].lower()
+        delete_context(context_name)
+        send_reply(f"I have unset !{context_name}", msg)
+
+
 def handle_message(event):
+    global contexts
+
     if event['type'] != 'message':
         return
 
@@ -212,7 +292,7 @@ def handle_message(event):
     # get subcommands (words starting with exclamation mark)
     subcommands = get_subcommands(content)
     content = remove_subcommands(content, subcommands)
-    
+
     if subcommands and "help" in subcommands:
         print_help(msg)
         return
@@ -242,31 +322,56 @@ def handle_message(event):
         {"role": "user", "content": f"{content}"},
     ]
 
+    context_names = [context[0] for context in contexts]
+    context_map = {context[0]: context[1] for context in contexts}
+
     if "contexts" in subcommands:
-        send_reply("This functionality is not implemented yet.", msg)
+        help_message = "Available contexts:\n"
+        for context_name, context_value in contexts:
+            help_message += f"- `!{context_name}`: {context_value}\n"
+        send_reply(help_message, msg)
         return
 
     if "me" in subcommands:
         send_reply("This functionality is not implemented yet.", msg)
         return
-    
+
     if "set" in subcommands:
-        send_reply("This functionality is not implemented yet.", msg)
+        process_set_subcommands(client, msg, messages, subcommands, content)
         return
-    
-    ##
-    # TODO process the rest of the subcommands (like !cicada !frankie ...)
-    ##
+
+    if "unset" in subcommands:
+        process_unset_subcommands(client, msg, messages, subcommands, content)
+        return
+    # new messages items will be appended after this index
+    # as we add custom role: system messages here
+    # and then add history messages later too between system and latest user message
+    append_after_index = 1
+
+    # iterate context_names and check if any of them is in subcommands
+    for context_name in context_names:
+        if context_name in subcommands:
+            context_value = context_map[context_name]
+            messages.insert(append_after_index, {
+                            "role": "system", "content": f"{context_value}"})
+            append_after_index += 1
 
     if not subcommands or "new" not in subcommands:
         messages = with_previous_messages(
-            client, msg, messages, subcommands, token_limit)
+            client, msg, messages, subcommands, token_limit, append_after_index)
 
     response = get_gpt3_response(messages, model=model)
     send_reply(response, msg)
 
 
 def main():
+    global contexts
+    logging.info("Initiate DB...")
+    cur.execute("CREATE TABLE IF NOT EXISTS contexts(name PRIMARY KEY, value)")
+
+    refetch_contexts()
+    print("Contexts", contexts)
+
     logging.info("Starting the GPT Zulip bot...")
     client.call_on_each_event(handle_message, event_types=['message'])
 
