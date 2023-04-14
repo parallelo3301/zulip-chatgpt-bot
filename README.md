@@ -6,6 +6,56 @@ Mostly ChatGPT generated experimental bot. [You can read a related blog article.
 
 As it's a Chat bot style, it works in a conversation. This context may affect future questions, so if you want to start new conversation, you can use this:
 
+
+## Help
+
+Write !help to a bot / mention him, to print this message:
+```
+# ChatGPT Assistant
+This is a chatbot assistant that uses OpenAI's ChatGPT API to generate responses to your messages.
+
+## How to use
+
+To use the bot, simply mention it in a message, e.g. @**{bot}** hello!. The bot will then generate a response and send it back to you.
+You can also write a private message to the bot without mentioning it.
+
+## Subcommands
+
+Subcommands are words starting with an exclamation mark, e.g. `!new`.
+You can use the following subcommands to control the bot:
+
+### General:
+- `!help` - show this help message
+
+### Context:
+- `!topic` - use context from the current topic (default behaviour; subcommand not implemented/needed)
+- `!stream` - use context from the current stream
+- `!new` - start a new conversation; no previous context (the bot will use context from the previous conversation by default which may affect the generated response)
+- `!contexts` - list all available contexts (e.g. `!cicada`, `!frankie`) and their values
+
+Example custom defined context: `!cicada` - add system context for Cicada; this may provide more accurate responses
+
+### Model:
+- `!gpt3` - use GPT-3.5 Turbo (default; 4K tokens, up to 2.5K for input)
+- `!gpt4` - use GPT-4 (8K tokens, up to 6K for input)
+
+### Global settings (admins only):
+- `!set` - (not implemented yet) show current settings
+- `!set context <name> <value> - upsert a context like !cicada. Example: `!set context cicada Cicada is a business wallet`
+- `!unset context <name>` - delete a context
+
+### User settings (not implemented yet):
+- `!me` - show your current settings
+- `!me model gpt3` - set your default model to GPT-3.5 Turbo
+- `!me model gpt4` - set your default model to GPT-4
+
+## Example usage
+- `@{bot} !gpt4 !stream Can you summarise previous messages?` - use GPT-4 and context from the current stream
+- `@{bot} !new I have a question...` - start a new conversation using GPT-3.5 Turbo and no context (previous messages will be ignored)
+
+Bot version: {version}
+```
+
 ### New conversation 
 
 To start a new conversation (as it fetches the history for up to 6K tokens, depends on the model and settings) just write `!new` subcommand anywhere in the message.
