@@ -188,7 +188,9 @@ def with_previous_messages(client, msg, messages, subcommands, token_limit, appe
 
         # get subcommands (words starting with exclamation mark)
         subcommands = get_subcommands(content)
-        content = remove_subcommands(content, subcommands)
+
+        # don't remove in previous messages for now, as it breaks with some code blocks
+        # content = remove_subcommands(content, subcommands)
 
         if client.email == msg['sender_email']:
             role = "assistant"
