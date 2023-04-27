@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import re
 import openai
@@ -12,7 +13,8 @@ import datetime
 load_dotenv()
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL)
 
 conn = sqlite3.connect('data.db')
 cur = conn.cursor()
@@ -274,6 +276,8 @@ def process_unset_subcommands(client, msg, messages, subcommands, content):
 def handle_message(event):
     global contexts
 
+    logging.debug("Handling event type: {type}".format(type=event['type']))
+
     if event['type'] != 'message':
         return
 
@@ -281,17 +285,25 @@ def handle_message(event):
     content = msg['content'].strip()
 
     if msg['sender_email'] == client.email:
+        logging.debug("Ignoring message sent by myself")
         return
 
-    if msg['type'] != 'private' and not re.search("@\*\*{bot}\*\*".format(bot=BOT_NAME), content):
+    if msg['type'] != 'private' and not re.search("@\*\*{bot}\*\*".format(bot=BOT_NAME), content) and not re.search("@{bot}".format(bot=BOT_NAME), content):
+        logging.debug(
+            "Ignoring message not mentioning the bot or sent in private")
         return
-
-    # first get rid of the command or mention trigger
-    content = re.sub("@\*\*{bot}\*\*".format(bot=BOT_NAME), "", content)
-    content = content.strip()
 
     # get subcommands (words starting with exclamation mark)
     subcommands = get_subcommands(content)
+
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    logging.debug(current_time, "Prompt from",
+                  msg['sender_email'], "with subcommands:", subcommands, "is:", content)
+
+    # first get rid of the command or mention trigger
+    content = re.sub("@\*\*{bot}\*\*".format(bot=BOT_NAME), "", content)
+    content = re.sub("@{bot}".format(bot=BOT_NAME), "", content)
+    content = content.strip()
     content = remove_subcommands(content, subcommands)
 
     if subcommands and "help" in subcommands:
@@ -361,14 +373,6 @@ def handle_message(event):
         messages = with_previous_messages(
             client, msg, messages, subcommands, token_limit, append_after_index)
 
-
-    # Get current datetime object
-    now = datetime.datetime.now()
-
-    # Convert datetime object to a string with a specific format
-    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    print(current_time, "Prompt from", msg['sender_email'], "with subcommands:", subcommands, "is:", content)
-
     response = get_gpt3_response(messages, model=model)
     send_reply(response, msg)
 
@@ -379,9 +383,17 @@ def main():
     cur.execute("CREATE TABLE IF NOT EXISTS contexts(name PRIMARY KEY, value)")
 
     refetch_contexts()
-    print("Contexts", contexts)
+    logging.info("Contexts")
+    logging.info(contexts)
 
-    logging.info("Starting the GPT Zulip bot...")
+    result = client.get_profile()
+    logging.debug(result)
+
+    if (result.get('code') == 'UNAUTHORIZED'):
+        logging.error("Invalid API key")
+        sys.exit(1)
+
+    logging.info("Starting the GPT Zulip bot named: {bot}".format(bot=BOT_NAME))
     client.call_on_each_event(handle_message, event_types=['message'])
 
 
