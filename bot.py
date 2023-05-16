@@ -28,7 +28,7 @@ client = zulip.Client(config_file=".zuliprc")
 PERMISSIONS_SET_CONTEXT = os.environ['PERMISSIONS_SET_CONTEXT']
 DEFAULT_MODEL_NAME = os.environ['DEFAULT_MODEL_NAME']
 BOT_NAME = os.environ['BOT_NAME']
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 contexts = {}
 
@@ -108,8 +108,8 @@ You can use the following subcommands to control the bot:
 
 Example custom defined context: `!cicada` - add system context for Cicada; this may provide more accurate responses
 
-### Model:
-- `!gpt3` - use GPT-3.5 Turbo (default; 4K tokens, up to 2.5K for input)
+### Model (default depends on server settings):
+- `!gpt3` - use GPT-3.5 Turbo (4K tokens, up to 2.5K for input)
 - `!gpt4` - use GPT-4 (8K tokens, up to 6K for input)
 
 ### Global settings:
