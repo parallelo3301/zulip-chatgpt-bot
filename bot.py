@@ -298,8 +298,7 @@ def handle_message(event):
     subcommands = get_subcommands(content)
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    logging.info(current_time, "Prompt from",
-                  msg['sender_email'], "with subcommands:", ", ".join(subcommands) , "is:", content)
+    logging.info("%s Prompt from %s with subcommands: %s is: %s", str(current_time), str(msg['sender_email']), ", ".join(subcommands), content)
 
     # first get rid of the command or mention trigger
     content = re.sub("@\*\*{bot}\*\*".format(bot=BOT_NAME), "", content)
