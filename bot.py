@@ -25,9 +25,10 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 # Set up Zulip client
 client = zulip.Client(config_file=".zuliprc")
 
+PERMISSIONS_SET_CONTEXT = os.environ['PERMISSIONS_SET_CONTEXT']
 DEFAULT_MODEL_NAME = os.environ['DEFAULT_MODEL_NAME']
 BOT_NAME = os.environ['BOT_NAME']
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 contexts = {}
 
@@ -111,7 +112,7 @@ Example custom defined context: `!cicada` - add system context for Cicada; this 
 - `!gpt3` - use GPT-3.5 Turbo (default; 4K tokens, up to 2.5K for input)
 - `!gpt4` - use GPT-4 (8K tokens, up to 6K for input)
 
-### Global settings (admins only):
+### Global settings:
 - `!set` - (not implemented yet) show current settings
 - `!set context <name> <value> - upsert a context like !cicada. Example: `!set context cicada Cicada is a business wallet`
 - `!unset context <name>` - delete a context
@@ -243,8 +244,7 @@ def process_set_subcommands(client, msg, messages, subcommands, content):
     content_chunks = content.strip().split()
     command = content_chunks[0].lower()
     if command == "context":
-        # return when sender is not an admin
-        if not is_admin(client, msg):
+        if PERMISSIONS_SET_CONTEXT == "admin" and not is_admin(client, msg):
             send_reply("Sorry, only admins can un/set contexts", msg)
             return
 
@@ -265,8 +265,7 @@ def process_unset_subcommands(client, msg, messages, subcommands, content):
     content_chunks = content.strip().split()
     command = content_chunks[0].lower()
     if command == "context":
-        # return when sender is not an admin
-        if not is_admin(client, msg):
+        if PERMISSIONS_SET_CONTEXT == "admin" and not is_admin(client, msg):
             send_reply("Sorry, only admins can un/set contexts", msg)
             return
 
