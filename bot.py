@@ -28,7 +28,7 @@ client = zulip.Client(config_file=".zuliprc")
 PERMISSIONS_SET_CONTEXT = os.environ['PERMISSIONS_SET_CONTEXT']
 DEFAULT_MODEL_NAME = os.environ['DEFAULT_MODEL_NAME']
 BOT_NAME = os.environ['BOT_NAME']
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 contexts = {}
 
@@ -73,7 +73,7 @@ def send_reply(reply, message):
     client.send_message(response)
 
 
-def get_gpt3_response(messages, model=DEFAULT_MODEL_NAME):
+def get_gpt_response(messages, model=DEFAULT_MODEL_NAME):
     response = openai.ChatCompletion.create(
         model=model,
         messages=messages,
@@ -374,7 +374,7 @@ def handle_message(event):
         messages = with_previous_messages(
             client, msg, messages, subcommands, token_limit, append_after_index)
 
-    response = get_gpt3_response(messages, model=model)
+    response = get_gpt_response(messages, model=model)
     send_reply(response, msg)
 
 
