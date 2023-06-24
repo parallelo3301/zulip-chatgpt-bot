@@ -40,7 +40,7 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo"):
     except KeyError:
         encoding = tiktoken.get_encoding("cl100k_base")
     # note: future models may deviate from this
-    if model == "gpt-3.5-turbo-0301" or model == "gpt-3.5-turbo" or model == "gpt-4":
+    if model.startswith("gpt-3") or model.startswith("gpt-4"):
         num_tokens = 0
         for message in messages:
             # every message follows <im_start>{role/name}\n{content}<im_end>\n
@@ -74,13 +74,16 @@ def send_reply(reply, message):
 
 
 def get_gpt_response(messages, model=DEFAULT_MODEL_NAME):
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages,
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+        )
 
-    return response.choices[0].message.content.strip()
-
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logging.error(e)
+        return "OpenAI API error. Please try again later."
 
 def print_help(msg):
     # return multiline string with help message
@@ -316,6 +319,8 @@ def handle_message(event):
         'gpt-3.5-turbo-0301': 2500,
         # input limit for GPT-4 (context 8k, prompt 6k, response 2k)
         'gpt-4': 6000,
+        'gpt-4-0314': 6000,
+        'gpt-4-0613': 6000,
     }
 
     model = DEFAULT_MODEL_NAME or 'gpt-3.5-turbo'
