@@ -28,7 +28,7 @@ client = zulip.Client(config_file=".zuliprc")
 PERMISSIONS_SET_CONTEXT = os.environ['PERMISSIONS_SET_CONTEXT']
 DEFAULT_MODEL_NAME = os.environ['DEFAULT_MODEL_NAME']
 BOT_NAME = os.environ['BOT_NAME']
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 contexts = {}
 
