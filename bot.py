@@ -336,7 +336,7 @@ def handle_message(event):
     token_limit = model_tokens[model]
 
     messages = [
-        {"role": "system", "content": "You are an internal chatbot assistant in a software development company called Flexiana."},
+        {"role": "system", "content": os.environ['BOT_ROLE']},
         {"role": "user", "content": f"{content}"},
     ]
 
