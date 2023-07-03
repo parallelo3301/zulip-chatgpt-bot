@@ -18,7 +18,11 @@ logging.basicConfig(level=LOGLEVEL)
 
 if not os.path.exists('data'):
     os.makedir('data')
-conn = sqlite3.connect('data/data.db')
+if os.path.isfile('data.db'):
+    os.rename('data.db', 'data/data.db')
+
+db_file = 'data.db' if os.path.isfile('data.db') else 'data/data.db'
+conn = sqlite3.connect(db_file)
 cur = conn.cursor()
 
 # Set up GPT-3 API key
@@ -30,7 +34,7 @@ client = zulip.Client(config_file=".zuliprc")
 PERMISSIONS_SET_CONTEXT = os.environ['PERMISSIONS_SET_CONTEXT']
 DEFAULT_MODEL_NAME = os.environ['DEFAULT_MODEL_NAME']
 BOT_NAME = os.environ['BOT_NAME']
-VERSION = "1.1.3"
+VERSION = "1.2.0"
 
 contexts = {}
 
