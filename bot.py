@@ -16,7 +16,9 @@ load_dotenv()
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
 
-conn = sqlite3.connect('data.db')
+if not os.path.exists('data'):
+    os.makedir('data')
+conn = sqlite3.connect('data/data.db')
 cur = conn.cursor()
 
 # Set up GPT-3 API key

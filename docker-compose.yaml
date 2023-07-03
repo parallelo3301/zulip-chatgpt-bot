@@ -1,0 +1,17 @@
+version: "3.3"
+
+services:
+  zulip-chatgpt-bot:
+    image: zulip-chatgpt-bot
+    container_name: zulip-chatgpt-bot
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEFAULT_MODEL_NAME=${DEFAULT_MODEL_NAME}
+      - BOT_NAME=${BOT_NAME}
+      - BOT_ROLE=${BOT_ROLE}
+      - LOGLEVEL=${LOGLEVEL}
+      - PERMISSIONS_SET_CONTEXT=${PERMISSIONS_SET_CONTEXT}
+    volumes:
+      - ./.zuliprc:/app/.zuliprc
+      - ./data:/app/data
