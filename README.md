@@ -143,4 +143,13 @@ pip install -r requirements.txt
 python3 bot.py
 ```
 
-4. You may also want to modify the system message in `bot.py` which says: `{"role": "system", "content": "You are an internal chatbot assistant in a software development company."}`
+4. You may also want to modify the bot role in `.env` which says: `"You are an internal chatbot assistant in a software development company."`
+
+
+## Running the bot in Docker container
+
+```
+docker build -t zulip-chatgpt-bot .
+docker-compose up -d 
+```
+
